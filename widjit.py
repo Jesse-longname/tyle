@@ -1,10 +1,8 @@
 import cv2
 import numpy as np
 import quad
-import mouse
 import utils
 
-screen = mouse.screensize()
 cap = cv2.VideoCapture(1)
 screenCnt = None
 k_thresh = 125 # adjust for lighting
@@ -97,18 +95,20 @@ while(True):
             M = cv2.moments(cnt)
             cX = int(M["m10"] / M["m00"])
             cY = int(M["m01"] / M["m00"])
-            # cv2.circle(ppr_img, (cX,cY), 50, RED, 2)
+            pixel_list = []
             out = np.array([0, 0, 0])
             tot = 0
             for dx in range(-50,50):
                 for dy in range(-50,50):
                     if dx*dx + dy*dy < 2500:
                         x,y = (cX - dx,cY - dy)
+                        pixel_list.append(ppr_img[y,x])
                         tot += 1
                         out += ppr_img[y,x]
             out = (out / tot).astype(int)
-            cv2.putText(ppr_img, "(%d, %d, %d)" % (out[2], out[1], out[0]), (cX-55, cY+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, RED, 1)
-
+            out = utils.kmeans(pixel_list)[0]
+            cv2.putText(ppr_img, "(%d,%d,%d)" % (out[2], out[1], out[0]), (cX-55, cY+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, RED, 1)
+            # cv2.putText(ppr_img, "%s" % utils.closest_colour((out[2], out[1], out[0])), (cX-55, cY+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, RED, 1)
         cv2.putText(ppr_img, "(%d, %d, %d)" % (ref_white[2], ref_white[1], ref_white[0]), (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, RED, 1)
 
         cv2.drawContours(ppr_img, cnts, -1, BLUE, 3)

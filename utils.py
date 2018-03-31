@@ -1,6 +1,8 @@
 # import the necessary packages
 import numpy as np
 import cv2
+import webcolors
+from sklearn.cluster import KMeans
 
 def draw_box(img, tl, br, color = (255, 0, 0)):
     h, w = img.shape[:2]
@@ -36,3 +38,18 @@ def crop(img, tl, br):
     y1 = int(tl[1]*h)
     y2 = int(br[1]*h)
     return img[y1:y2, x1:x2, :]
+
+def closest_colour(requested_colour):
+    min_colours = {}
+    for key, name in webcolors.css3_hex_to_names.items():
+        r_c, g_c, b_c = webcolors.hex_to_rgb(key)
+        rd = (r_c - requested_colour[0]) ** 2
+        gd = (g_c - requested_colour[1]) ** 2
+        bd = (b_c - requested_colour[2]) ** 2
+        min_colours[(rd + gd + bd)] = name
+    return min_colours[min(min_colours.keys())]
+
+def kmeans(pixel_list):
+    clt = KMeans(n_clusters = 2)
+    clt.fit(pixel_list)
+    return clt.cluster_centers_
