@@ -5,7 +5,7 @@ from sklearn.cluster import KMeans
 
 colors = {
     'Word': (66,87,142),
-    'Chrome': (104, 39, 36),
+    'Chrome': (98, 50, 40),
     'Spotify': (66,91,82),
     'Text': (49,44,87),
     'Play': (146,73,46),

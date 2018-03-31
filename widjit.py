@@ -23,6 +23,8 @@ ref_white = [128, 128, 128]
 RED = (0, 0, 255)
 GREEN = (0, 255, 0)
 BLUE = (255, 0, 0)
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
 
 # convert point from density coordinates to fractional coordinates
 def dpt2fpt(p):
@@ -78,8 +80,9 @@ while(True):
 
     # if paper is detected
     if bg_thresh is not None:
-        # get contours for the icons
         ppr_img = ppr_quad.transform(img)
+
+        # get contours for the icons
         area = (ppr_img.shape[0] * ppr_img.shape[1])
         gray = cv2.cvtColor(ppr_img,cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray, (5, 5), 0)
@@ -90,33 +93,28 @@ while(True):
         (_, contours, _) = cv2.findContours(edges[p1[1]:p2[1],p1[0]:p2[0]], cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         cnts = list(filter(lambda x: cv2.contourArea(x, True) > area / 80, map(lambda x: x+p1, contours)))
 
+        # draw icon contours
+        cv2.drawContours(ppr_img, cnts, -1, BLUE, 3)
+
         # get center of contours
-        for cnt in cnts:   
+        for cnt in cnts:
+            w_size = 50
             M = cv2.moments(cnt)
             cX = int(M["m10"] / M["m00"])
             cY = int(M["m01"] / M["m00"])
             pixel_list = []
-            out = np.array([0, 0, 0])
-            tot = 0
-            w_size = 50
             for dx in range(-w_size,w_size,10):
                 for dy in range(-w_size,w_size,10):
                     if dx*dx + dy*dy < 2500:
                         x,y = (cX - dx,cY - dy)
                         pixel_list.append(ppr_img[y,x])
-                        tot += 1
-                        out += ppr_img[y,x]
-            out = (out / tot).astype(int)
             out = utils.kmeans_noisy(pixel_list)
-            cv2.circle(ppr_img, (cX,cY), 10, out, 20)
-            cv2.circle(ppr_img, (cX,cY), 20, (0,0,0), 3)
-            # cv2.putText(ppr_img, "(%d,%d,%d)" % (out[2], out[1], out[0]), (cX-55, cY+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, RED, 1)
+            # cv2.circle(ppr_img, (cX,cY), 10, out, 20)
+            # cv2.circle(ppr_img, (cX,cY), 20, BLACK, 3)            
+            # cv2.putText(ppr_img, "(%d,%d,%d)" % ((out[0], out[1], out[2])), (cX-55, cY+10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, WHITE, 2)
             name = utils.closest_colour((out[2], out[1], out[0]))
-            cv2.putText(ppr_img, "%s" % name, (cX-len(name)*8, cY+5), cv2.FONT_HERSHEY_SIMPLEX, 0.75, RED, 2)
-        
-        cv2.drawContours(ppr_img, cnts, -1, BLUE, 3)
-
-        # utils.draw_box(ppr_img, (border,border), (1-border,1-border), GREEN)
+            text_size = cv2.getTextSize(name, cv2.FONT_HERSHEY_SIMPLEX, 0.75, 2)[0]
+            cv2.putText(ppr_img, "%s" % name, (cX-int(text_size[0]/2), cY+int(text_size[1]/2)), cv2.FONT_HERSHEY_SIMPLEX, 0.75, WHITE, 2)
 
         cv2.imshow('Frame', ppr_img)
     else:
