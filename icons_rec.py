@@ -24,11 +24,22 @@ def detect_color(img):
     return "rainbow"
 
 def kmeans(image):
-    clt = KMeans(nclusters = 2)
+    clt = KMeans(n_clusters = 2)
     # reshape the image to be a list of pixels
     image = image.reshape((image.shape[0] * image.shape[1], 3))
     clt.fit(image)
     return clt.cluster_centers_
+
+def main():
+    img_word = cv2.imread("images/word_icon.png")
+    img_chr = cv2.imread("images/chrome_icon.png")
+    img_spot = cv2.imread("images/spotify_icon.png")
+    print(kmeans(img_word))
+    print(kmeans(img_chr))
+    print(kmeans(img_spot))
+
+
+
 
 
 
