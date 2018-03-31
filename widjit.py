@@ -18,6 +18,7 @@ bg_thresh = None
 ppr_quad = None
 
 # density represent grid of samples from paper area
+border = 0.01
 density = [30, 30]
 d_tot = density[0] * density[1]
 ref_white = [128, 128, 128]
@@ -79,11 +80,45 @@ while(True):
 
     # if paper is detected
     if bg_thresh is not None:
+        # get contours for the icons
         ppr_img = ppr_quad.transform(img)
-        utils.draw_box(ppr_img, (0,0), (1,1), GREEN)
-        utils.draw_box(ppr_img, (0,0), (0.33,0.33), GREEN)
-        utils.draw_box(ppr_img, (0.33,0), (0.66,0.33), GREEN)
-        utils.draw_box(ppr_img, (0.66,0), (1,1), GREEN)
+        area = (ppr_img.shape[0] * ppr_img.shape[1])
+        gray = cv2.cvtColor(ppr_img,cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+        thresh = cv2.threshold(blurred, k_thresh, 255, cv2.THRESH_BINARY)[1]
+        edges = cv2.Canny(thresh, 50, 200)
+        p1 = utils.convert_point(edges, (border,border))
+        p2 = utils.convert_point(edges, (1-border,1-border))
+        (_, contours, _) = cv2.findContours(edges[p1[1]:p2[1],p1[0]:p2[0]], cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        cnts = list(filter(lambda x: cv2.contourArea(x, True) > area / 80, map(lambda x: x+p1, contours)))
+
+        # get center of contours
+        for cnt in cnts:   
+            M = cv2.moments(cnt)
+            cX = int(M["m10"] / M["m00"])
+            cY = int(M["m01"] / M["m00"])
+            # cv2.circle(ppr_img, (cX,cY), 50, RED, 2)
+            out = np.array([0, 0, 0])
+            tot = 0
+            for dx in range(-50,50):
+                for dy in range(-50,50):
+                    if dx*dx + dy*dy < 2500:
+                        x,y = (cX - dx,cY - dy)
+                        tot += 1
+                        out += ppr_img[y,x]
+            out = (out / tot).astype(int)
+            cv2.putText(ppr_img, "(%d, %d, %d)" % (out[2], out[1], out[0]), (cX-55, cY+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, RED, 1)
+
+        cv2.putText(ppr_img, "(%d, %d, %d)" % (ref_white[2], ref_white[1], ref_white[0]), (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, RED, 1)
+
+        cv2.drawContours(ppr_img, cnts, -1, BLUE, 3)
+
+        utils.draw_box(ppr_img, (border,border), (1-border,1-border), GREEN)
+
+        # utils.draw_box(ppr_img, (0,0), (1,1), GREEN)
+        # utils.draw_box(ppr_img, (0,0), (0.33,0.33), GREEN)
+        # utils.draw_box(ppr_img, (0.33,0), (0.66,0.33), GREEN)
+        # utils.draw_box(ppr_img, (0.66,0), (1,1), GREEN)
 
         # for x in range(int(density[0]/3)):
         #     for y in range(int(density[1]/3)):
