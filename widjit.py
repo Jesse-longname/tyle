@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import quad
 import utils
+import controls
 
 cap = cv2.VideoCapture(1)
 screenCnt = None
@@ -26,6 +27,8 @@ BLUE = (255, 0, 0)
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 
+curr_app = ""
+
 # convert point from density coordinates to fractional coordinates
 def dpt2fpt(p):
     x, y = p
@@ -40,6 +43,14 @@ def get_white():
             p = (x,y)
             out += utils.get_pixel(ppr_img, dpt2fpt(p))
     return (out / d_tot).astype(int)
+
+def handle_tile(name, p):
+    global curr_app
+    if name in controls.apps and name != curr_app:
+        controls.open_app(controls.apps[name])
+        curr_app = name
+    elif name == 'Black':
+        controls.change_volume(np.clip(int((p[1]-0.1)/0.75*16),0,16))
 
 while(True):
     ret,img = cap.read()
@@ -81,6 +92,7 @@ while(True):
     # if paper is detected
     if bg_thresh is not None:
         ppr_img = ppr_quad.transform(img)
+        h, w = ppr_img.shape[:2]
 
         # get contours for the icons
         area = (ppr_img.shape[0] * ppr_img.shape[1])
@@ -115,6 +127,8 @@ while(True):
             name = utils.closest_colour((out[2], out[1], out[0]))
             text_size = cv2.getTextSize(name, cv2.FONT_HERSHEY_SIMPLEX, 0.75, 2)[0]
             cv2.putText(ppr_img, "%s" % name, (cX-int(text_size[0]/2), cY+int(text_size[1]/2)), cv2.FONT_HERSHEY_SIMPLEX, 0.75, WHITE, 2)
+            
+            handle_tile(name, (cX/w, 1-cY/h))
 
         cv2.imshow('Frame', ppr_img)
     else:
