@@ -98,40 +98,25 @@ while(True):
             pixel_list = []
             out = np.array([0, 0, 0])
             tot = 0
-            for dx in range(-50,50):
-                for dy in range(-50,50):
+            w_size = 50
+            for dx in range(-w_size,w_size,10):
+                for dy in range(-w_size,w_size,10):
                     if dx*dx + dy*dy < 2500:
                         x,y = (cX - dx,cY - dy)
                         pixel_list.append(ppr_img[y,x])
                         tot += 1
                         out += ppr_img[y,x]
             out = (out / tot).astype(int)
-            out = utils.kmeans(pixel_list)[0]
-            cv2.putText(ppr_img, "(%d,%d,%d)" % (out[2], out[1], out[0]), (cX-55, cY+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, RED, 1)
-            # cv2.putText(ppr_img, "%s" % utils.closest_colour((out[2], out[1], out[0])), (cX-55, cY+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, RED, 1)
-        cv2.putText(ppr_img, "(%d, %d, %d)" % (ref_white[2], ref_white[1], ref_white[0]), (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, RED, 1)
-
+            out = utils.kmeans_noisy(pixel_list)
+            cv2.circle(ppr_img, (cX,cY), 10, out, 20)
+            cv2.circle(ppr_img, (cX,cY), 20, (0,0,0), 3)
+            # cv2.putText(ppr_img, "(%d,%d,%d)" % (out[2], out[1], out[0]), (cX-55, cY+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, RED, 1)
+            name = utils.closest_colour((out[2], out[1], out[0]))
+            cv2.putText(ppr_img, "%s" % name, (cX-len(name)*8, cY+5), cv2.FONT_HERSHEY_SIMPLEX, 0.75, RED, 2)
+        
         cv2.drawContours(ppr_img, cnts, -1, BLUE, 3)
 
-        utils.draw_box(ppr_img, (border,border), (1-border,1-border), GREEN)
-
-        # utils.draw_box(ppr_img, (0,0), (1,1), GREEN)
-        # utils.draw_box(ppr_img, (0,0), (0.33,0.33), GREEN)
-        # utils.draw_box(ppr_img, (0.33,0), (0.66,0.33), GREEN)
-        # utils.draw_box(ppr_img, (0.66,0), (1,1), GREEN)
-
-        # for x in range(int(density[0]/3)):
-        #     for y in range(int(density[1]/3)):
-        #         p = (x,y)
-        #         if np.mean(utils.get_pixel(ppr_img, dpt2fpt(p))) > 100:
-        #             utils.draw_point(ppr_img, dpt2fpt(p), BLUE)
-        #         else:
-        #             utils.draw_point(ppr_img, dpt2fpt(p), RED)
-
-        # for x in range(density[0]):
-        #     for y in range(density[1]):
-        #         p = (x,y)
-        #         utils.draw_point(ppr_img, dpt2fpt(p), BLUE)
+        # utils.draw_box(ppr_img, (border,border), (1-border,1-border), GREEN)
 
         cv2.imshow('Frame', ppr_img)
     else:
