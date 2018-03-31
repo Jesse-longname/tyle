@@ -1,0 +1,7 @@
+Notes:
+
+Text search/URLs:
+    microsoft handwriting recognition API
+    search if word, navigate if URL
+    keep list of popular URLs and match to closest if close enough
+

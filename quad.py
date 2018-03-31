@@ -1,6 +1,6 @@
 import math
 import numpy as np
-
+import cv2
 
 # distance between 2 points
 def p2p_dist(p1, p2):
@@ -47,6 +47,12 @@ class Line:
         p2 = self.points[1]
         return ((p1[1] - p2[1]) * p[0] - (p1[0] - p2[0]) * p[1] + p1[0] * p2[1] - p1[1] * p2[0]) / p2p_dist(p1, p2)
 
+    def frac(self, w):
+        p1 = self.points[0]
+        p2 = self.points[1]
+        x, y = p_avgw(p1, p2, w)
+        return (int(x), int(y))
+
 
 # class defining a quadrilateral
 class Quad:
@@ -58,16 +64,15 @@ class Quad:
         right = points[2:]
         left = sorted(left, key=lambda p: p[1])
         right = sorted(right, key=lambda p: p[1])
-        self.points = [left[0], right[0], left[1], right[1]]  # tl, tr, bl, br
+        # self.points = [left[0], right[0], left[1], right[1]]  # tl, tr, bl, br
+        self.points = np.array([left[0], right[0], right[1], left[1]])  # tl, tr, br, bl
         l_top = Line(left[0], right[0])
         l_right = Line(right[1], right[0])
         l_bottom = Line(left[1], right[1])
         l_left = Line(left[1], left[0])
-        # self.lines = [l_top, l_bottom, l_left, l_right]
-        self.lines = [l_avgw(l_top, l_bottom, 0.85), l_avgw(l_bottom, l_top, 0.95), l_avgw(l_left, l_right, 0.95), l_avgw(l_right, l_left, 0.95)]  # top, bottom, left, right
-
-    def get_points(self):
-        return np.array([self.points[0], self.points[1], self.points[3], self.points[2]])
+        self.lines = [l_top, l_bottom, l_left, l_right]
+        # self.lines = [l_bottom, l_top, l_right, l_left]
+        # self.lines = [l_avgw(l_top, l_bottom, 0.85), l_avgw(l_bottom, l_top, 0.95), l_avgw(l_left, l_right, 0.95), l_avgw(l_right, l_left, 0.95)]  # top, bottom, left, right
 
     # returns true if p is in the quadrilateral
     def contains(self, p):
@@ -93,21 +98,44 @@ class Quad:
         else:
             return self.frac(p, l1, l3, min_f, max_f - half)
 
-    # returns the the point p in fractional screen coordinates
+    # returns the the point p in fractional screen coordinates given camera coordinates
     def convert(self, p):
         f_y = self.frac(p, self.lines[0], self.lines[1], 0.0, 1.0)
         f_x = self.frac(p, self.lines[2], self.lines[3], 0.0, 1.0)
         return f_x, 1-f_y
 
+    #returns the point p in camera coordinates given fractional screen coordinates
+    def convert2(self, p):
+        f_x, f_y = p
+        l_mid = l_avgw(self.lines[0], self.lines[1], 1-f_y)
+        x, y = l_mid.frac(1-f_x)
+        return int(x), int(y)
 
-#
-# a1 = (0, 0)
-# a2 = (0, 100)
-# a3 = (100, 0)
-# a4 = (100, 100)
-# a5 = (50, 50)
-# q = Quad([a1, a2, a3, a4])
-# # for point in q.points:
-# #     print point
-# # print q.convert(a5)
-# print q.lines[1].points
+    def transform(self, img):
+        pts = self.points.astype('float32')
+        (tl, tr, br, bl) = pts
+     
+        # compute the width of the new image
+        widthA = np.sqrt(((br[0] - bl[0]) ** 2) + ((br[1] - bl[1]) ** 2))
+        widthB = np.sqrt(((tr[0] - tl[0]) ** 2) + ((tr[1] - tl[1]) ** 2))
+        maxWidth = max(int(widthA), int(widthB))
+     
+        # compute the height of the new image
+        heightA = np.sqrt(((tr[0] - br[0]) ** 2) + ((tr[1] - br[1]) ** 2))
+        heightB = np.sqrt(((tl[0] - bl[0]) ** 2) + ((tl[1] - bl[1]) ** 2))
+        maxHeight = max(int(heightA), int(heightB))
+     
+        # transform to top-down view
+        dst = np.array([
+            [0, 0],
+            [maxWidth - 1, 0],
+            [maxWidth - 1, maxHeight - 1],
+            [0, maxHeight - 1]], dtype = 'float32')
+     
+        # compute the perspective transform matrix and then apply it
+        M = cv2.getPerspectiveTransform(pts, dst)
+        warped = cv2.warpPerspective(img, M, (maxWidth, maxHeight))
+     
+        # return the warped image
+        return warped
+        
