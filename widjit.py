@@ -21,14 +21,23 @@ ppr_quad = None
 density = [30, 30]
 d_tot = density[0] * density[1]
 ref_white = [128, 128, 128]
+RED = (0, 0, 255)
+GREEN = (0, 255, 0)
+BLUE = (255, 0, 0)
+
+# convert point from density coordinates to fractional coordinates
+def dpt2fpt(p):
+    x, y = p
+    return ((x+1)/(density[0]+1), (y+1)/(density[1]+1))
 
 # get average pixel color sampled over the paper
 def get_white():
+    ppr_img = ppr_quad.transform(img)
     out = np.array([0, 0, 0])
     for x in range(density[0]):
-        for y in range(density[0]):
-            p = ppr_quad.convert2(((x+1)/(density[0]+1), (y+1)/(density[1]+1)))
-            out += orig[p[1], p[0]]
+        for y in range(density[1]):
+            p = (x,y)
+            out += utils.get_pixel(ppr_img, dpt2fpt(p))
     return (out / d_tot).astype(int)
 
 while(True):
@@ -49,8 +58,7 @@ while(True):
         peri = cv2.arcLength(c, True)
         area = cv2.contourArea(c)
         approx = cv2.approxPolyDP(c, 0.01 * peri, True)
-        # if our approximated contour has four points, then
-        # we can assume that we have found our paper
+        # found paper
         if len(approx) == 4 and peri > 1500 and area > 50000:
             counter += 1
             gap_counter = 0
@@ -60,7 +68,6 @@ while(True):
                 bg_thresh = np.zeros(thresh.shape, dtype=np.uint8)
                 ppr_quad = quad.Quad(map(lambda x: x[0], screenCnt))
                 ref_white = get_white()
-                # print(ref_white)
                 cv2.fillConvexPoly(bg_thresh, ppr_quad.points, 255)
                 cv2.polylines(bg_thresh, [ppr_quad.points], True, 0, 5)
             break
@@ -70,55 +77,31 @@ while(True):
     if gap_counter >= gap_thresh:
         counter = 0
 
+    # if paper is detected
     if bg_thresh is not None:
         ppr_img = ppr_quad.transform(img)
-        utils.draw_box(ppr_img, (0,0), (1,1))
-        utils.draw_box(ppr_img, (0,0), (0.33,0.33))
-        utils.draw_box(ppr_img, (0.33,0), (0.66,0.33))
-        utils.draw_box(ppr_img, (0.66,0), (1,1))
+        utils.draw_box(ppr_img, (0,0), (1,1), GREEN)
+        utils.draw_box(ppr_img, (0,0), (0.33,0.33), GREEN)
+        utils.draw_box(ppr_img, (0.33,0), (0.66,0.33), GREEN)
+        utils.draw_box(ppr_img, (0.66,0), (1,1), GREEN)
+
+        # for x in range(int(density[0]/3)):
+        #     for y in range(int(density[1]/3)):
+        #         p = (x,y)
+        #         if np.mean(utils.get_pixel(ppr_img, dpt2fpt(p))) > 100:
+        #             utils.draw_point(ppr_img, dpt2fpt(p), BLUE)
+        #         else:
+        #             utils.draw_point(ppr_img, dpt2fpt(p), RED)
+
+        # for x in range(density[0]):
+        #     for y in range(density[1]):
+        #         p = (x,y)
+        #         utils.draw_point(ppr_img, dpt2fpt(p), BLUE)
+
         cv2.imshow('Frame', ppr_img)
     else:
-        cv2.drawContours(img, cnts, -1, (255, 0, 0), 3)
+        cv2.drawContours(img, cnts, -1, BLUE, 3)
         cv2.imshow('Frame', img)
-
-    # if screenCnt is not None:
-    #     # Draw red circles highlighting the corners
-    #     for point in screenCnt:
-    #         cv2.circle(img, (point[0][0], point[0][1]), 5, (0, 0, 255), 3)
-    #     # Draw blue lines outlining the box
-    #     cv2.drawContours(img, [screenCnt], -1, (255, 0, 0), 3)
-    # else:
-    #     cv2.drawContours(img, cnts, -1, (255, 0, 0), 3)
-
-    # if bg_thresh is not None:
-    #     # get average white value of paper
-    #     # go through paper regions
-    #     # classify pixels as white, blue, red, etc.
-    #     # classify region 
-
-    #     p1 = ppr_quad.convert2((0, 0.33))
-    #     p2 = ppr_quad.convert2((1, 0.33))
-    #     cv2.drawContours(img, [np.array([p1,p2])], -1, (0, 255, 0), 3)
-    #     p1 = ppr_quad.convert2((0.33, 0))
-    #     p2 = ppr_quad.convert2((0.33, 1))
-    #     cv2.drawContours(img, [np.array([p1,p2])], -1, (0, 0, 255), 3)
-
-    #     for x in range(int(density[0]/3)):
-    #         for y in range(int(density[1]/3)):
-    #             p = ppr_quad.convert2(((x+1)/(density[0]+1), (y+1)/(density[1]+1)))
-    #             orig_p = orig[p[1], p[0]]
-    #             if np.mean(orig_p) > 100:
-    #                 cv2.circle(img, p, 2, (0, 255, 0), 2)
-    #             else:
-    #                 cv2.circle(img, p, 2, (0, 0, 255), 2)
-    #             # print(orig_p - ref_white)
-    #             # b,g,r = orig[p[1], p[0]]
-    #             # cv2.circle(img, p, 3, (int(b),int(g),int(r)), 3)
-
-    #     cv2.imshow('Frame', ppr_quad.transform(img))
-    # else:
-    #     # cv2.imshow('Frame',img)
-    #     cv2.imshow('Frame',img)
 
     if cv2.waitKey(1) &0xFF == ord('q'):
         break

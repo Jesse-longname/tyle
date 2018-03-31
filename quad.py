@@ -98,19 +98,7 @@ class Quad:
         else:
             return self.frac(p, l1, l3, min_f, max_f - half)
 
-    # returns the the point p in fractional screen coordinates given camera coordinates
-    def convert(self, p):
-        f_y = self.frac(p, self.lines[0], self.lines[1], 0.0, 1.0)
-        f_x = self.frac(p, self.lines[2], self.lines[3], 0.0, 1.0)
-        return f_x, 1-f_y
-
-    #returns the point p in camera coordinates given fractional screen coordinates
-    def convert2(self, p):
-        f_x, f_y = p
-        l_mid = l_avgw(self.lines[0], self.lines[1], 1-f_y)
-        x, y = l_mid.frac(1-f_x)
-        return int(x), int(y)
-
+    # transform the original image to projected rectangle of the quad
     def transform(self, img):
         pts = self.points.astype('float32')
         (tl, tr, br, bl) = pts
