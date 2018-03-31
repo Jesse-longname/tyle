@@ -23,12 +23,23 @@ def detect_color(img):
         return "green"
     return "rainbow"
 
-def kmeans(image):
+def kmeans(pixel_list):
     clt = KMeans(n_clusters = 2)
-    # reshape the image to be a list of pixels
-    image = image.reshape((image.shape[0] * image.shape[1], 3))
-    clt.fit(image)
-    return clt.cluster_centers_
+    clt.fit(pixel_list)
+    labels = clt.labels_
+    if sum(labels)/len(labels) > 0.5:
+        return clt.cluster_centers_[1]
+    return clt.cluster_centers_[0]
+
+def kmeans_noisy(pixel_list):
+    k = 4
+    clt = KMeans(n_clusters = k)
+    clt.fit(pixel_list)
+    labels = clt.labels_
+    counts = [labels.count(i) for i in range(0,k)]
+    x = np.argmax(counts)
+    return clt.cluster_centers_[x]
+
 
 def main():
     img_word = cv2.imread("images/word_icon.png")
