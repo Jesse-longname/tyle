@@ -32,6 +32,7 @@ WHITE = (255, 255, 255)
 cur_app = ''
 tiles = {}
 old_tiles = {}
+ppr_img_copy = None
 
 # convert point from density coordinates to fractional coordinates
 def dpt2fpt(p):
@@ -68,7 +69,7 @@ def handle_tile_start(name, p):
     elif name == 'Play':
         controls.play()
     if name == 'Text':
-        query = ocr.read_text(ppr_img)
+        query = ocr.read_text(ppr_img_copy)
         if query is not None:
             print(query)
             controls.open_chrome_site(query)
@@ -76,7 +77,6 @@ def handle_tile_start(name, p):
         controls.dictation()
 
 def handle_tile_end(name):
-    global ppr_img
     print('End: %s' % name)
     if name == 'Dictation':
         controls.dictation()
@@ -89,7 +89,6 @@ while(True):
     ret,img = cap.read()
     img = cv2.flip(img,1)
     img = cv2.flip(img,0)
-    orig = img.copy()
     gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
     thresh = cv2.threshold(blurred, k_thresh, 255, cv2.THRESH_BINARY)[1]
@@ -126,6 +125,7 @@ while(True):
     if bg_thresh is not None:
         ppr_img = ppr_quad.transform(img)
         h, w = ppr_img.shape[:2]
+        ppr_img_copy = ppr_img.copy()
 
         # get contours for the icons
         area = (ppr_img.shape[0] * ppr_img.shape[1])
@@ -160,7 +160,7 @@ while(True):
             # cv2.putText(ppr_img, "(%d,%d,%d)" % ((out[0], out[1], out[2])), (cX-55, cY+10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, WHITE, 2)
             name = utils.closest_colour((out[2], out[1], out[0]))
             text_size = cv2.getTextSize(name, cv2.FONT_HERSHEY_SIMPLEX, 0.75, 2)[0]
-            # cv2.putText(ppr_img, "%s" % name, (cX-int(text_size[0]/2), cY+int(text_size[1]/2)), cv2.FONT_HERSHEY_SIMPLEX, 0.75, WHITE, 2)
+            cv2.putText(ppr_img, "%s" % name, (cX-int(text_size[0]/2), cY+int(text_size[1]/2)), cv2.FONT_HERSHEY_SIMPLEX, 0.75, WHITE, 2)
             
             tiles[name] = (cX/w, 1-cY/h)
 

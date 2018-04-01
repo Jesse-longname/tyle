@@ -44,17 +44,19 @@ def do_app_action(app):
         k.tap_key('command')
         k.tap_key('command')
 
-volumes = [0, 6, 13, 19, 25, 31, 38, 44, 50, 56, 62, 68, 75, 81, 88, 94, 100]
+cur_vol = 0
+os.popen('osascript -e "set Volume 0"')
 
 def change_volume(target):
-    volume = volumes.index(int(os.popen('osascript -e "output volume of (get volume settings)"').read()))
-    diff = abs(volume - target)
-    if volume < target:
+    global cur_vol
+    diff = abs(cur_vol - target)
+    if cur_vol < target:
         for i in range (0, diff):
             k.tap_key('KEYTYPE_SOUND_UP')
-    elif volume > target:
+    elif cur_vol > target:
         for i in range (0, diff):
             k.tap_key('KEYTYPE_SOUND_DOWN')
+    cur_vol = target
 
 def play():
     k.tap_key('KEYTYPE_PLAY')
