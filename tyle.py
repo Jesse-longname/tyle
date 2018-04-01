@@ -84,7 +84,7 @@ def handle_tile_end(name):
         controls.dictation()
 
 def handle_tile_constant(name, p):
-    if name == 'Black':
+    if name == 'Volume':
         controls.change_volume(np.clip(int((p[1]-0.1)/0.75*16),0,16))
 
 while(True):
@@ -167,7 +167,7 @@ while(True):
                 text_size = cv2.getTextSize(name, cv2.FONT_HERSHEY_SIMPLEX, 0.75, 2)[0]
                 cv2.putText(ppr_img, "(%d,%d,%d)" % (c1[2], c1[1], c1[0]), (cX-55, cY-15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, WHITE, 2)
                 cv2.putText(ppr_img, "(%d,%d,%d)" % (c2[2], c2[1], c2[0]), (cX-55, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, WHITE, 2)
-                cv2.putText(ppr_img, "%s" % name, (cX-int(text_size[0]/2), cY+15+int(text_size[1]/2)), cv2.FONT_HERSHEY_SIMPLEX, 0.75, WHITE, 2)
+                cv2.putText(ppr_img, "%s" % name, (cX-int(text_size[0]/2), cY+int(text_size[1]/2)), cv2.FONT_HERSHEY_SIMPLEX, 0.75, WHITE, 2)
             
             tiles[name] = (cX/w, 1-cY/h)
 
@@ -180,7 +180,6 @@ while(True):
         old_tiles = tiles
 
         cv2.imshow('Frame', ppr_img)
-        # cv2.imshow('Frame', thresh)
     else:
         cv2.drawContours(img, cnts, -1, BLUE, 3)
         cv2.imshow('Frame', img)
