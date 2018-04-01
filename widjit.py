@@ -3,6 +3,8 @@ import numpy as np
 import quad
 import utils
 import controls
+import time
+import ocr
 
 cap = cv2.VideoCapture(1)
 screenCnt = None
@@ -27,7 +29,9 @@ BLUE = (255, 0, 0)
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 
-curr_app = ""
+cur_app = ''
+tiles = {}
+old_tiles = {}
 
 # convert point from density coordinates to fractional coordinates
 def dpt2fpt(p):
@@ -44,12 +48,41 @@ def get_white():
             out += utils.get_pixel(ppr_img, dpt2fpt(p))
     return (out / d_tot).astype(int)
 
-def handle_tile(name, p):
-    global curr_app
-    if name in controls.apps and name != curr_app:
-        controls.open_app(controls.apps[name])
-        curr_app = name
-    elif name == 'Black':
+def handle_tile_start(name, p):
+    print('Start: %s' % name)
+    global cur_app
+    if name in controls.apps:
+        if name != cur_app:
+            controls.open_app(controls.apps[name])
+            cur_app = name
+        # apps = list(controls.app_names.intersection(tiles.keys()))
+        # if len(apps) == 2:
+        #     app1, app2 = sorted(apps, key=lambda x: tiles[x][0])[:2]
+        #     controls.open_app(controls.apps[app1])
+        #     controls.align_left()
+        #     time.sleep(0.1)
+        #     controls.open_app(controls.apps[app2])
+        #     controls.align_right()
+        #     time.sleep(0.1)
+        #     controls.open_app(controls.apps[cur_app])
+    elif name == 'Play':
+        controls.play()
+    if name == 'Text':
+        query = ocr.read_text(ppr_img)
+        if query is not None:
+            print(query)
+            controls.open_chrome_site(query)
+    elif name == 'Dictation':
+        controls.dictation()
+
+def handle_tile_end(name):
+    global ppr_img
+    print('End: %s' % name)
+    if name == 'Dictation':
+        controls.dictation()
+
+def handle_tile_constant(name, p):
+    if name == 'Black':
         controls.change_volume(np.clip(int((p[1]-0.1)/0.75*16),0,16))
 
 while(True):
@@ -108,6 +141,7 @@ while(True):
         # draw icon contours
         cv2.drawContours(ppr_img, cnts, -1, BLUE, 3)
 
+        tiles = {}
         # get center of contours
         for cnt in cnts:
             w_size = 50
@@ -122,13 +156,21 @@ while(True):
                         pixel_list.append(ppr_img[y,x])
             out = utils.kmeans_noisy(pixel_list)
             # cv2.circle(ppr_img, (cX,cY), 10, out, 20)
-            # cv2.circle(ppr_img, (cX,cY), 20, BLACK, 3)            
+            # cv2.circle(ppr_img, (cX,cY), 20, BLACK, 3)    
             # cv2.putText(ppr_img, "(%d,%d,%d)" % ((out[0], out[1], out[2])), (cX-55, cY+10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, WHITE, 2)
             name = utils.closest_colour((out[2], out[1], out[0]))
             text_size = cv2.getTextSize(name, cv2.FONT_HERSHEY_SIMPLEX, 0.75, 2)[0]
-            cv2.putText(ppr_img, "%s" % name, (cX-int(text_size[0]/2), cY+int(text_size[1]/2)), cv2.FONT_HERSHEY_SIMPLEX, 0.75, WHITE, 2)
+            # cv2.putText(ppr_img, "%s" % name, (cX-int(text_size[0]/2), cY+int(text_size[1]/2)), cv2.FONT_HERSHEY_SIMPLEX, 0.75, WHITE, 2)
             
-            handle_tile(name, (cX/w, 1-cY/h))
+            tiles[name] = (cX/w, 1-cY/h)
+
+        for name in tiles.keys() - old_tiles.keys():
+            handle_tile_start(name, tiles[name])
+        for name in old_tiles.keys() - tiles.keys():
+            handle_tile_end(name)
+        for name in set(tiles.keys()).intersection(old_tiles.keys()):
+            handle_tile_constant(name, tiles[name])
+        old_tiles = tiles
 
         cv2.imshow('Frame', ppr_img)
     else:

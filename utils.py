@@ -4,12 +4,13 @@ import cv2
 from sklearn.cluster import KMeans
 
 colors = {
-    'Word': (66,87,142),
-    'Chrome': (98, 50, 40),
-    'Spotify': (66,91,82),
-    'Text': (49,44,87),
-    'Play': (146,73,46),
-    'Black': (16,18,18)
+    'Word': (60,80,130),
+    'Chrome': (100, 30, 25),
+    'Spotify': (31, 55, 50), #(66,91,82),
+    'Dictation': (90,20,55),
+    'Text': (50,35,70),
+    'Play': (140,60,35),
+    'Black': (15,15,15)
 }
 
 def draw_box(img, tl, br, color = (255, 0, 0)):

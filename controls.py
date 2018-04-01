@@ -1,5 +1,7 @@
 import os
+import time
 from pykeyboard import PyKeyboard
+import pyautogui
 
 k = PyKeyboard();
 
@@ -9,8 +11,16 @@ apps = {
     'Spotify': 'Spotify',
 }
 
+app_names = {'Chrome', 'Word', 'Spotify'}
+
 def open_app(app_name):
     os.system('open -a "%s".app' % app_name)
+
+def align_left():
+    k.press_keys(['Control','Alternate','a'])
+
+def align_right():
+    k.press_keys(['Control','Alternate','d'])
 
 def do_app_action(app):
     if app == 'spotify':
@@ -46,6 +56,12 @@ def change_volume(target):
         for i in range (0, diff):
             k.tap_key('KEYTYPE_SOUND_DOWN')
 
+def play():
+    k.tap_key('KEYTYPE_PLAY')
+
+def dictation():
+    pyautogui.press('f1')
+
 def open_chrome_site(url):
-    os.system('open -a "Google Chrome" http://' +  url)
+    os.system('open -a "Google Chrome" http://%s' % url)
 
