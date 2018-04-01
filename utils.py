@@ -1,16 +1,15 @@
-# import the necessary packages
 import numpy as np
 import cv2
 from sklearn.cluster import KMeans
 
 colors = {
-    'Word': (60,80,130),
-    'Chrome': (100, 30, 25),
-    'Spotify': (31, 55, 50), #(66,91,82),
-    'Dictation': (90,20,55),
-    'Text': (50,35,70),
-    'Play': (140,60,35),
-    'Black': (15,15,15)
+    'Word':         ((60,80,135),   (45,60,100)),
+    'Chrome':       ((100,65,70),   (75,85,120)),
+    'Spotify':      ((80,92,80),    (155,155,155)),
+    'Dictation':    ((107,45,75),   (145,145,145)),
+    'Search':       ((75,65,90),    (70,60,80)),
+    'Play':         ((135,70,60),   (150,125,60)),
+    'Black':        ((40,40,40),    (145,145,145))
 }
 
 def draw_box(img, tl, br, color = (255, 0, 0)):
@@ -48,15 +47,19 @@ def crop(img, tl, br):
     y2 = int(br[1]*h)
     return img[y1:y2, x1:x2, :]
 
-def closest_colour(requested_colour):
+def closest_colour(c1, c2):
     best_color = 'None'
     best_dist = float('inf')
     for name, color in colors.items():
-        r_c, g_c, b_c, = color
-        rd = (r_c - requested_colour[0]) ** 2
-        gd = (g_c - requested_colour[1]) ** 2
-        bd = (b_c - requested_colour[2]) ** 2
-        dist = rd + gd + bd
+        r1,g1,b1 = color[0]
+        r2,g2,b2 = color[1]
+        dist = 0
+        dist += (r1 - c1[0]) ** 2
+        dist += (g1 - c1[1]) ** 2
+        dist += (b1 - c1[2]) ** 2
+        dist += (r2 - c2[0]) ** 2
+        dist += (g2 - c2[1]) ** 2
+        dist += (b2 - c2[2]) ** 2
         if dist < best_dist:
             best_color = name
             best_dist = dist
